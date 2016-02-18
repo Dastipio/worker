@@ -1,23 +1,13 @@
-var AWS = require("aws-sdk");
-var os = require("os");
-var crypto = require('crypto');
-var fs = require('fs');
-//zawiera funkcje pomocnicze generowania skrótów robienia z jonson obiektu ...
-var helpers = require("./helpers");
-//accessKeyId ... klucze do amazona 
+var AWS = require("aws-sdk"),
+    fs = require('fs'),
+    helpers = require("./helpers");
 AWS.config.loadFromPath('./config.json');
-//obiekt dla instancji S3 z aws-sdk
-var s3 = new AWS.S3();
-//plik z linkiem do kolejki
-var APP_CONFIG_FILE = "./app.json";
-//dane o kolejce wyciągamy z tablicy i potrzebny link przypisujemy do linkKolejki
-var tablicaKolejki = helpers.readJSONFile(APP_CONFIG_FILE);
-var linkKolejki = tablicaKolejki.QueueUrl
-//obiekt kolejki z aws-sdk
-var sqs=new AWS.SQS();
-
-//obiekt do obsługi simple DB z aws-sdk
-var simpledb = new AWS.SimpleDB();
+var s3 = new AWS.S3(),
+    APP_CONFIG_FILE = "./app.json",
+    tablicaKolejki = helpers.readJSONFile(APP_CONFIG_FILE),
+    linkKolejki = tablicaKolejki.QueueUrl,
+    sqs=new AWS.SQS(),
+    simpledb = new AWS.SimpleDB();
 //GraphicsMagic
 var gm = require('gm').subClass({imageMagick: true});
 
@@ -44,20 +34,15 @@ var myServer = function(){
 		
 		//Czy jest jakaś wiadomość
 		if(!data.Messages) {
-			console.log("No message in queue.");
+			console.log("Brak wiadomości w kolejce");
 		} else {
 			
 			//pobranie danych z body wiadomosci w kolejce i zrobienie z nich tablicy
 			//handler do ussunięcia wiadomości z kolejki
 			var ReceiptHandle_forDelete = data.Messages[0].ReceiptHandle;
-			//{bucket, key}
 			console.log(data.Messages[0].Body);
 			var messageinfo = data.Messages[0].Body.split('/');
-			console.log("Otrzymano wiadomosc: bucket - "+messageinfo[0]+", key - "+messageinfo[1]);
-			
-			//to samo co wyzej tylko pobiera dane z metadanych a nie z body
-			//var messageinfo = { "bucket":messages[0],"key":data.Messages[0].MessageAttributes.key.StringValue}console.log(messageinfo.bucket);
-				
+			console.log("Otrzymano wiadomość: bucket - "+messageinfo[0]+", key - "+messageinfo[1]);
 			//parametry do pobrania pliku (obiektu)
 			var params2 = {
 				Bucket: 'lab4-weeia',
@@ -72,7 +57,7 @@ var myServer = function(){
                         //console.log(requestt);
 			//po zapisie na dysk
 			requestt.on('finish', function (){
-				console.log('jestem tu po zapisaniu pliku na dysk');
+				console.log('Zapisano plik na dysk');
 
 				gm('tmp/'+messageinfo[1]).colors(40)
 				.write('tmp/'+messageinfo[1], function (err) {
@@ -81,7 +66,7 @@ var myServer = function(){
 				}
 				//po udanej zmienie w pliku
 				else {
-					console.log(' udalosie przetworzuc plik');	
+					console.log('Plik przetworzono z powodzeniem');	
 					
 					//wrzucamy na s3 nowy plik
 					var fileStream = require('fs').createReadStream('tmp/'+messageinfo[1]);
@@ -99,10 +84,11 @@ var myServer = function(){
 						}
 						else {   
 							console.log(datau);
-							console.log('zuploadowano');
+							console.log('Upload pliku');
 							
 							
 							//zmieniamy info w bazie że już przerobiony plik
+							var d = new Date();
 							var paramsdb = {
 								Attributes: [
 									{ 
@@ -112,7 +98,7 @@ var myServer = function(){
 									}
 								],
 								DomainName: "PawelKrzysiek", 
-								ItemName: 'ITEM001'
+								ItemName: 'ITEM_'+d.getTime()
 							};
 							simpledb.putAttributes(paramsdb, function(err, datass) {
 							if (err) {
