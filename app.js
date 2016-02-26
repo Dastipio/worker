@@ -34,13 +34,13 @@ var myServer = function(){
 		
 		//Czy jest jakaś wiadomość
 		if(!data.Messages) {
-			console.log("Brak wiadomości w kolejce");
+			console.log("Brak wiadomości w kolejce!");
 		} else {
 			
 			//pobranie danych z body wiadomosci w kolejce i zrobienie z nich tablicy
 			//handler do ussunięcia wiadomości z kolejki
 			var ReceiptHandle_forDelete = data.Messages[0].ReceiptHandle;
-			console.log(data.Messages[0].Body);
+			//console.log(data.Messages[0].Body);
 			var messageinfo = data.Messages[0].Body.split('/');
 			console.log("Otrzymano wiadomość: bucket - "+messageinfo[0]+", key - "+messageinfo[1]);
 			//parametry do pobrania pliku (obiektu)
@@ -57,7 +57,7 @@ var myServer = function(){
                         //console.log(requestt);
 			//po zapisie na dysk
 			requestt.on('finish', function (){
-				console.log('Zapisano plik na dysk');
+				console.log('Zapisano plik: ' + messageinfo[1] + ' ,na dysk');
 
 				gm('tmp/'+messageinfo[1]).colors(40)
 				.write('tmp/'+messageinfo[1], function (err) {
@@ -83,7 +83,7 @@ var myServer = function(){
 							console.log(err, err.stack);
 						}
 						else {   
-							console.log(datau);
+							//console.log(datau);
 							console.log('Upload pliku');
 							
 							
@@ -92,13 +92,13 @@ var myServer = function(){
 							var paramsdb = {
 								Attributes: [
 									{ 
-									Name: messageinfo[1], 
+									Name: data.Messages[0].Body, 
 									Value: "yes", 
 									Replace: true
 									}
 								],
 								DomainName: "PawelKrzysiek", 
-								ItemName: 'ITEM_'+d.getTime()
+								ItemName: 'ITEM001'//+d.getTime()
 							};
 							simpledb.putAttributes(paramsdb, function(err, datass) {
 							if (err) {
@@ -113,7 +113,7 @@ var myServer = function(){
 								};
 								sqs.deleteMessage(params, function(err, data) {
 								  if (err) console.log(err, err.stack); // an error occurred
-								  else     console.log("Usunieto wiadomosc z kolejki: "+data);           // successful response
+								  else     console.log("Usunieto wiadomosc z kolejki: " + linkKolejki.substring(49));           // successful response
 								});
 							}
 							});
